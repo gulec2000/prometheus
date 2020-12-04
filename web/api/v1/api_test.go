@@ -564,8 +564,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.query,
 			query: url.Values{
-				"query": []string{"2"},
-				"time":  []string{"123.4"},
+				queryParam: []string{"2"},
+				timeParam:  []string{"123.4"},
 			},
 			response: &queryData{
 				ResultType: parser.ValueTypeScalar,
@@ -578,8 +578,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.query,
 			query: url.Values{
-				"query": []string{"0.333"},
-				"time":  []string{"1970-01-01T00:02:03Z"},
+				queryParam: []string{"0.333"},
+				timeParam:  []string{"1970-01-01T00:02:03Z"},
 			},
 			response: &queryData{
 				ResultType: parser.ValueTypeScalar,
@@ -592,8 +592,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.query,
 			query: url.Values{
-				"query": []string{"0.333"},
-				"time":  []string{"1970-01-01T01:02:03+01:00"},
+				queryParam: []string{"0.333"},
+				timeParam:  []string{"1970-01-01T01:02:03+01:00"},
 			},
 			response: &queryData{
 				ResultType: parser.ValueTypeScalar,
@@ -606,7 +606,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.query,
 			query: url.Values{
-				"query": []string{"0.333"},
+				queryParam: []string{"0.333"},
 			},
 			response: &queryData{
 				ResultType: parser.ValueTypeScalar,
@@ -619,10 +619,10 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"start": []string{"0"},
-				"end":   []string{"2"},
-				"step":  []string{"1"},
+				queryParam: []string{"time()"},
+				startParam: []string{"0"},
+				endParam:   []string{"2"},
+				stepParam:  []string{"1"},
 			},
 			response: &queryData{
 				ResultType: parser.ValueTypeMatrix,
@@ -642,27 +642,27 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"end":   []string{"2"},
-				"step":  []string{"1"},
+				queryParam: []string{"time()"},
+				endParam:   []string{"2"},
+				stepParam:  []string{"1"},
 			},
 			errType: errorBadData,
 		},
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"start": []string{"0"},
-				"step":  []string{"1"},
+				queryParam: []string{"time()"},
+				startParam: []string{"0"},
+				stepParam:  []string{"1"},
 			},
 			errType: errorBadData,
 		},
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"start": []string{"0"},
-				"end":   []string{"2"},
+				queryParam: []string{"time()"},
+				startParam: []string{"0"},
+				endParam:   []string{"2"},
 			},
 			errType: errorBadData,
 		},
@@ -670,18 +670,18 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.query,
 			query: url.Values{
-				"query": []string{"invalid][query"},
-				"time":  []string{"1970-01-01T01:02:03+01:00"},
+				queryParam: []string{"invalid][query"},
+				timeParam:  []string{"1970-01-01T01:02:03+01:00"},
 			},
 			errType: errorBadData,
 		},
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"invalid][query"},
-				"start": []string{"0"},
-				"end":   []string{"100"},
-				"step":  []string{"1"},
+				queryParam: []string{"invalid][query"},
+				startParam: []string{"0"},
+				endParam:   []string{"100"},
+				stepParam:  []string{"1"},
 			},
 			errType: errorBadData,
 		},
@@ -689,10 +689,10 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"start": []string{"1"},
-				"end":   []string{"2"},
-				"step":  []string{"0"},
+				queryParam: []string{"time()"},
+				startParam: []string{"1"},
+				endParam:   []string{"2"},
+				stepParam:  []string{"0"},
 			},
 			errType: errorBadData,
 		},
@@ -700,10 +700,10 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"start": []string{"2"},
-				"end":   []string{"1"},
-				"step":  []string{"1"},
+				queryParam: []string{"time()"},
+				startParam: []string{"2"},
+				endParam:   []string{"1"},
+				stepParam:  []string{"1"},
 			},
 			errType: errorBadData,
 		},
@@ -711,17 +711,17 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.queryRange,
 			query: url.Values{
-				"query": []string{"time()"},
-				"start": []string{"148966367200.372"},
-				"end":   []string{"1489667272.372"},
-				"step":  []string{"1"},
+				queryParam: []string{"time()"},
+				startParam: []string{"148966367200.372"},
+				endParam:   []string{"1489667272.372"},
+				stepParam:  []string{"1"},
 			},
 			errType: errorBadData,
 		},
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
+				matcherParam: []string{`test_metric2`},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric2", "foo", "boo"),
@@ -730,7 +730,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric1{foo=~".+o"}`},
+				matcherParam: []string{`test_metric1{foo=~".+o"}`},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric1", "foo", "boo"),
@@ -739,7 +739,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric1{foo=~".+o$"}`, `test_metric1{foo=~".+o"}`},
+				matcherParam: []string{`test_metric1{foo=~".+o$"}`, `test_metric1{foo=~".+o"}`},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric1", "foo", "boo"),
@@ -749,7 +749,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric4{foo=~".+o$"}`, `test_metric4{dup=~"^1"}`},
+				matcherParam: []string{`test_metric4{foo=~".+o$"}`, `test_metric4{dup=~"^1"}`},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric4", "dup", "1", "foo", "bar"),
@@ -760,7 +760,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric1{foo=~".+o"}`, `none`},
+				matcherParam: []string{`test_metric1{foo=~".+o"}`, `none`},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric1", "foo", "boo"),
@@ -770,9 +770,9 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
-				"start":   []string{"-2"},
-				"end":     []string{"-1"},
+				matcherParam: []string{`test_metric2`},
+				startParam:   []string{"-2"},
+				endParam:     []string{"-1"},
 			},
 			response: []labels.Labels{},
 		},
@@ -780,9 +780,9 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
-				"start":   []string{"100000"},
-				"end":     []string{"100001"},
+				matcherParam: []string{`test_metric2`},
+				startParam:   []string{"100000"},
+				endParam:     []string{"100001"},
 			},
 			response: []labels.Labels{},
 		},
@@ -790,9 +790,9 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
-				"start":   []string{"-1"},
-				"end":     []string{"100000"},
+				matcherParam: []string{`test_metric2`},
+				startParam:   []string{"-1"},
+				endParam:     []string{"100000"},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric2", "foo", "boo"),
@@ -802,9 +802,9 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
-				"start":   []string{"1"},
-				"end":     []string{"100"},
+				matcherParam: []string{`test_metric2`},
+				startParam:   []string{"1"},
+				endParam:     []string{"100"},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric2", "foo", "boo"),
@@ -814,9 +814,9 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
-				"start":   []string{"1"},
-				"end":     []string{"100000"},
+				matcherParam: []string{`test_metric2`},
+				startParam:   []string{"1"},
+				endParam:     []string{"100000"},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric2", "foo", "boo"),
@@ -826,9 +826,9 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.series,
 			query: url.Values{
-				"match[]": []string{`test_metric2`},
-				"start":   []string{"-1"},
-				"end":     []string{"1"},
+				matcherParam: []string{`test_metric2`},
+				startParam:   []string{"-1"},
+				endParam:     []string{"1"},
 			},
 			response: []labels.Labels{
 				labels.FromStrings("__name__", "test_metric2", "foo", "boo"),
@@ -992,7 +992,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.targetMetadata,
 			query: url.Values{
-				"metric": []string{"go_threads"},
+				metricParam: []string{"go_threads"},
 			},
 			metadata: []targetMetadata{
 				{
@@ -1229,7 +1229,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.metricMetadata,
 			query: url.Values{
-				"limit": []string{"2"},
+				limitParam: []string{"2"},
 			},
 			metadata: []targetMetadata{
 				{
@@ -1266,7 +1266,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		// When requesting a specific metric that is present.
 		{
 			endpoint: api.metricMetadata,
-			query:    url.Values{"metric": []string{"go_threads"}},
+			query:    url.Values{metricParam: []string{"go_threads"}},
 			metadata: []targetMetadata{
 				{
 					identifier: "test",
@@ -1314,7 +1314,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		// With a specific metric that is not present.
 		{
 			endpoint: api.metricMetadata,
-			query:    url.Values{"metric": []string{"go_gc_duration_seconds"}},
+			query:    url.Values{metricParam: []string{"go_gc_duration_seconds"}},
 			metadata: []targetMetadata{
 				{
 					identifier: "test",
@@ -1397,7 +1397,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.rules,
 			query: url.Values{
-				"type": []string{"alert"},
+				typeParam: []string{"alert"},
 			},
 			response: &RuleDiscovery{
 				RuleGroups: []*RuleGroup{
@@ -1436,7 +1436,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 		{
 			endpoint: api.rules,
 			query: url.Values{
-				"type": []string{"record"},
+				typeParam: []string{"record"},
 			},
 			response: &RuleDiscovery{
 				RuleGroups: []*RuleGroup{
@@ -1498,8 +1498,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"-2"},
-					"end":   []string{"-1"},
+					startParam: []string{"-2"},
+					endParam:   []string{"-1"},
 				},
 				response: []string{},
 			},
@@ -1510,8 +1510,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"1"},
-					"end":   []string{"100"},
+					startParam: []string{"1"},
+					endParam:   []string{"100"},
 				},
 				response: []string{
 					"bar",
@@ -1525,8 +1525,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"-1"},
-					"end":   []string{"3"},
+					startParam: []string{"-1"},
+					endParam:   []string{"3"},
 				},
 				response: []string{
 					"bar",
@@ -1540,8 +1540,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"1969-12-31T00:00:00Z"},
-					"end":   []string{"1970-02-01T00:02:03Z"},
+					startParam: []string{"1969-12-31T00:00:00Z"},
+					endParam:   []string{"1970-02-01T00:02:03Z"},
 				},
 				response: []string{
 					"bar",
@@ -1555,8 +1555,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"boop"},
-					"end":   []string{"1"},
+					startParam: []string{"boop"},
+					endParam:   []string{"1"},
 				},
 				errType: errorBadData,
 			},
@@ -1567,8 +1567,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"1"},
-					"end":   []string{"100000000"},
+					startParam: []string{"1"},
+					endParam:   []string{"100000000"},
 				},
 				response: []string{
 					"bar",
@@ -1582,8 +1582,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"148966367200.372"},
-					"end":   []string{"148966367200.972"},
+					startParam: []string{"148966367200.372"},
+					endParam:   []string{"148966367200.972"},
 				},
 				response: []string{},
 			},
@@ -1594,7 +1594,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"start": []string{"2"},
+					startParam: []string{"2"},
 				},
 				response: []string{
 					"bar",
@@ -1608,7 +1608,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 					"name": "foo",
 				},
 				query: url.Values{
-					"end": []string{"100"},
+					endParam: []string{"100"},
 				},
 				response: []string{
 					"bar",
@@ -1625,8 +1625,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"-2"},
-					"end":   []string{"-1"},
+					startParam: []string{"-2"},
+					endParam:   []string{"-1"},
 				},
 				response: []string{},
 			},
@@ -1634,8 +1634,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"1"},
-					"end":   []string{"100"},
+					startParam: []string{"1"},
+					endParam:   []string{"100"},
 				},
 				response: []string{"__name__", "dup", "foo"},
 			},
@@ -1643,8 +1643,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"-1"},
-					"end":   []string{"10"},
+					startParam: []string{"-1"},
+					endParam:   []string{"10"},
 				},
 				response: []string{"__name__", "dup", "foo"},
 			},
@@ -1653,8 +1653,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"-1"},
-					"end":   []string{"100000"},
+					startParam: []string{"-1"},
+					endParam:   []string{"100000"},
 				},
 				response: []string{"__name__", "dup", "foo"},
 			},
@@ -1662,8 +1662,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"boop"},
-					"end":   []string{"1"},
+					startParam: []string{"boop"},
+					endParam:   []string{"1"},
 				},
 				errType: errorBadData,
 			},
@@ -1671,8 +1671,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"1"},
-					"end":   []string{"1000000006"},
+					startParam: []string{"1"},
+					endParam:   []string{"1000000006"},
 				},
 				response: []string{"__name__", "dup", "foo"},
 			},
@@ -1680,8 +1680,8 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"148966367200.372"},
-					"end":   []string{"148966367200.972"},
+					startParam: []string{"148966367200.372"},
+					endParam:   []string{"148966367200.972"},
 				},
 				response: []string{},
 			},
@@ -1689,7 +1689,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"start": []string{"4"},
+					startParam: []string{"4"},
 				},
 				response: []string{"__name__", "dup", "foo"},
 			},
@@ -1697,7 +1697,7 @@ func testEndpoints(t *testing.T, api *API, tr *testTargetRetriever, testLabelAPI
 			{
 				endpoint: api.labelNames,
 				query: url.Values{
-					"end": []string{"20"},
+					endParam: []string{"20"},
 				},
 				response: []string{"__name__", "dup", "foo"},
 			},
@@ -2167,7 +2167,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    snapshotAPI,
-			values:      map[string][]string{"skip_head": {"true"}},
+			values:      map[string][]string{skipHeadParam: {"true"}},
 
 			errType: errorNone,
 		},
@@ -2175,7 +2175,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    snapshotAPI,
-			values:      map[string][]string{"skip_head": {"xxx"}},
+			values:      map[string][]string{skipHeadParam: {"xxx"}},
 
 			errType: errorBadData,
 		},
@@ -2241,7 +2241,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"123"}},
+			values:      map[string][]string{matcherParam: {"123"}},
 
 			errType: errorBadData,
 		},
@@ -2249,7 +2249,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"up"}, "start": {"xxx"}},
+			values:      map[string][]string{matcherParam: {"up"}, startParam: {"xxx"}},
 
 			errType: errorBadData,
 		},
@@ -2257,7 +2257,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"up"}, "end": {"xxx"}},
+			values:      map[string][]string{matcherParam: {"up"}, endParam: {"xxx"}},
 
 			errType: errorBadData,
 		},
@@ -2265,7 +2265,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"up"}},
+			values:      map[string][]string{matcherParam: {"up"}},
 
 			errType: errorNone,
 		},
@@ -2273,7 +2273,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdb,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"up{job!=\"foo\"}", "{job=~\"bar.+\"}", "up{instance!~\"fred.+\"}"}},
+			values:      map[string][]string{matcherParam: {"up{job!=\"foo\"}", "{job=~\"bar.+\"}", "up{instance!~\"fred.+\"}"}},
 
 			errType: errorNone,
 		},
@@ -2281,7 +2281,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdbWithError,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"up"}},
+			values:      map[string][]string{matcherParam: {"up"}},
 
 			errType: errorInternal,
 		},
@@ -2289,7 +2289,7 @@ func TestAdminEndpoints(t *testing.T) {
 			db:          tsdbNotReady,
 			enableAdmin: true,
 			endpoint:    deleteAPI,
-			values:      map[string][]string{"match[]": {"up"}},
+			values:      map[string][]string{matcherParam: {"up"}},
 
 			errType: errorUnavailable,
 		},
@@ -2406,7 +2406,7 @@ func TestParseTimeParam(t *testing.T) {
 		result       resultType
 	}{
 		{ // When data is valid.
-			paramName:    "start",
+			paramName:    startParam,
 			paramValue:   "1582468023986",
 			defaultValue: minTime,
 			result: resultType{
@@ -2415,7 +2415,7 @@ func TestParseTimeParam(t *testing.T) {
 			},
 		},
 		{ // When data is empty string.
-			paramName:    "end",
+			paramName:    endParam,
 			paramValue:   "",
 			defaultValue: maxTime,
 			result: resultType{

@@ -59,6 +59,20 @@ import (
 const (
 	namespace = "prometheus"
 	subsystem = "api"
+
+	matcherParam     = "match[]"
+	queryParam       = "query"
+	stepParam        = "step"
+	statsParam       = "stats"
+	timeoutParam     = "timeout"
+	timeParam        = "time"
+	startParam       = "start"
+	endParam         = "end"
+	limitParam       = "limit"
+	matchTargetParam = "match_target"
+	metricParam      = "metric"
+	typeParam        = "type"
+	skipHeadParam    = "skip_head"
 )
 
 type status string
@@ -330,33 +344,38 @@ type queryData struct {
 	Stats      *stats.QueryStats `json:"stats,omitempty"`
 }
 
+func invalidParamError(err error, parameter string) apiFuncResult {
+	return apiFuncResult{nil, &apiError{
+		errorBadData, errors.Wrapf(err, "invalid parameter %q", parameter),
+	}, nil, nil}
+}
+
 func (api *API) options(r *http.Request) apiFuncResult {
 	return apiFuncResult{nil, nil, nil, nil}
 }
 
 func (api *API) query(r *http.Request) (result apiFuncResult) {
-	ts, err := parseTimeParam(r, "time", api.now())
+	ts, err := parseTimeParam(r, timeParam, api.now())
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, timeParam)
 	}
 	ctx := r.Context()
-	if to := r.FormValue("timeout"); to != "" {
+	if to := r.FormValue(timeoutParam); to != "" {
 		var cancel context.CancelFunc
 		timeout, err := parseDuration(to)
 		if err != nil {
-			err = errors.Wrapf(err, "invalid parameter 'timeout'")
-			return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+			return invalidParamError(err, timeoutParam)
 		}
 
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 
-	qry, err := api.QueryEngine.NewInstantQuery(api.Queryable, r.FormValue("query"), ts)
+	qry, err := api.QueryEngine.NewInstantQuery(api.Queryable, r.FormValue(queryParam), ts)
 	if err != nil {
-		err = errors.Wrapf(err, "invalid parameter 'query'")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, queryParam)
 	}
+
 	// From now on, we must only return with a finalizer in the result (to
 	// be called by the caller) or call qry.Close ourselves (which is
 	// required in the case of a panic).
@@ -387,30 +406,25 @@ func (api *API) query(r *http.Request) (result apiFuncResult) {
 }
 
 func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
-	start, err := parseTime(r.FormValue("start"))
+	start, err := parseTime(r.FormValue(startParam))
 	if err != nil {
-		err = errors.Wrapf(err, "invalid parameter 'start'")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, startParam)
 	}
-	end, err := parseTime(r.FormValue("end"))
+	end, err := parseTime(r.FormValue(endParam))
 	if err != nil {
-		err = errors.Wrapf(err, "invalid parameter 'end'")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, endParam)
 	}
 	if end.Before(start) {
-		err := errors.New("end timestamp must not be before start time")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(errors.New("end timestamp must not be before start time"), endParam)
 	}
 
-	step, err := parseDuration(r.FormValue("step"))
+	step, err := parseDuration(r.FormValue(stepParam))
 	if err != nil {
-		err = errors.Wrapf(err, "invalid parameter 'step'")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, stepParam)
 	}
 
 	if step <= 0 {
-		err := errors.New("zero or negative query resolution step widths are not accepted. Try a positive integer")
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(errors.New("zero or negative query resolution step widths are not accepted. Try a positive integer"), stepParam)
 	}
 
 	// For safety, limit the number of returned points per timeseries.
@@ -421,19 +435,18 @@ func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
 	}
 
 	ctx := r.Context()
-	if to := r.FormValue("timeout"); to != "" {
+	if to := r.FormValue(timeoutParam); to != "" {
 		var cancel context.CancelFunc
 		timeout, err := parseDuration(to)
 		if err != nil {
-			err = errors.Wrap(err, "invalid parameter 'timeout'")
-			return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+			return invalidParamError(err, timeoutParam)
 		}
 
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 
-	qry, err := api.QueryEngine.NewRangeQuery(api.Queryable, r.FormValue("query"), start, end, step)
+	qry, err := api.QueryEngine.NewRangeQuery(api.Queryable, r.FormValue(queryParam), start, end, step)
 	if err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
 	}
@@ -455,7 +468,7 @@ func (api *API) queryRange(r *http.Request) (result apiFuncResult) {
 
 	// Optional stats field in response if parameter "stats" is not empty.
 	var qs *stats.QueryStats
-	if r.FormValue("stats") != "" {
+	if r.FormValue(statsParam) != "" {
 		qs = stats.NewQueryStats(qry.Stats())
 	}
 
@@ -484,13 +497,13 @@ func returnAPIError(err error) *apiError {
 }
 
 func (api *API) labelNames(r *http.Request) apiFuncResult {
-	start, err := parseTimeParam(r, "start", minTime)
+	start, err := parseTimeParam(r, startParam, minTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrap(err, "invalid parameter 'start'")}, nil, nil}
+		return invalidParamError(err, startParam)
 	}
-	end, err := parseTimeParam(r, "end", maxTime)
+	end, err := parseTimeParam(r, endParam, maxTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrap(err, "invalid parameter 'end'")}, nil, nil}
+		return invalidParamError(err, endParam)
 	}
 
 	q, err := api.Queryable.Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
@@ -517,13 +530,13 @@ func (api *API) labelValues(r *http.Request) (result apiFuncResult) {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.Errorf("invalid label name: %q", name)}, nil, nil}
 	}
 
-	start, err := parseTimeParam(r, "start", minTime)
+	start, err := parseTimeParam(r, startParam, minTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrap(err, "invalid parameter 'start'")}, nil, nil}
+		return invalidParamError(err, startParam)
 	}
-	end, err := parseTimeParam(r, "end", maxTime)
+	end, err := parseTimeParam(r, endParam, maxTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrap(err, "invalid parameter 'end'")}, nil, nil}
+		return invalidParamError(err, endParam)
 	}
 
 	q, err := api.Queryable.Querier(r.Context(), timestamp.FromTime(start), timestamp.FromTime(end))
@@ -565,24 +578,24 @@ func (api *API) series(r *http.Request) (result apiFuncResult) {
 	if err := r.ParseForm(); err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrapf(err, "error parsing form values")}, nil, nil}
 	}
-	if len(r.Form["match[]"]) == 0 {
+	if len(r.Form[matcherParam]) == 0 {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.New("no match[] parameter provided")}, nil, nil}
 	}
 
-	start, err := parseTimeParam(r, "start", minTime)
+	start, err := parseTimeParam(r, startParam, minTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, startParam)
 	}
-	end, err := parseTimeParam(r, "end", maxTime)
+	end, err := parseTimeParam(r, endParam, maxTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, endParam)
 	}
 
 	var matcherSets [][]*labels.Matcher
-	for _, s := range r.Form["match[]"] {
+	for _, s := range r.Form[matcherParam] {
 		matchers, err := parser.ParseMetricSelector(s)
 		if err != nil {
-			return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+			return invalidParamError(err, matcherParam)
 		}
 		matcherSets = append(matcherSets, matchers)
 	}
@@ -630,7 +643,7 @@ func (api *API) series(r *http.Request) (result apiFuncResult) {
 	return apiFuncResult{metrics, nil, warnings, closer}
 }
 
-func (api *API) dropSeries(r *http.Request) apiFuncResult {
+func (api *API) dropSeries(_ *http.Request) apiFuncResult {
 	return apiFuncResult{nil, &apiError{errorInternal, errors.New("not implemented")}, nil, nil}
 }
 
@@ -800,28 +813,24 @@ func matchLabels(lset labels.Labels, matchers []*labels.Matcher) bool {
 
 func (api *API) targetMetadata(r *http.Request) apiFuncResult {
 	limit := -1
-	if s := r.FormValue("limit"); s != "" {
+	if s := r.FormValue(limitParam); s != "" {
 		var err error
 		if limit, err = strconv.Atoi(s); err != nil {
 			return apiFuncResult{nil, &apiError{errorBadData, errors.New("limit must be a number")}, nil, nil}
 		}
 	}
 
-	matchTarget := r.FormValue("match_target")
-
+	matchTarget := r.FormValue(matchTargetParam)
 	var matchers []*labels.Matcher
-
 	var err error
-
 	if matchTarget != "" {
 		matchers, err = parser.ParseMetricSelector(matchTarget)
 		if err != nil {
-			return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+			return invalidParamError(err, matcherParam)
 		}
 	}
 
-	metric := r.FormValue("metric")
-
+	metric := r.FormValue(metricParam)
 	res := []metricMetadata{}
 	for _, tt := range api.targetRetriever(r.Context()).TargetsActive() {
 		for _, t := range tt {
@@ -947,15 +956,14 @@ func (api *API) metricMetadata(r *http.Request) apiFuncResult {
 	metrics := map[string]map[metadata]struct{}{}
 
 	limit := -1
-	if s := r.FormValue("limit"); s != "" {
+	if s := r.FormValue(limitParam); s != "" {
 		var err error
 		if limit, err = strconv.Atoi(s); err != nil {
 			return apiFuncResult{nil, &apiError{errorBadData, errors.New("limit must be a number")}, nil, nil}
 		}
 	}
 
-	metric := r.FormValue("metric")
-
+	metric := r.FormValue(metricParam)
 	for _, tt := range api.targetRetriever(r.Context()).TargetsActive() {
 		for _, t := range tt {
 
@@ -988,7 +996,6 @@ func (api *API) metricMetadata(r *http.Request) apiFuncResult {
 
 	// Put the elements from the pseudo-set into a slice for marshaling.
 	res := map[string][]metadata{}
-
 	for name, set := range metrics {
 		if limit >= 0 && len(res) >= limit {
 			break
@@ -1056,15 +1063,14 @@ type recordingRule struct {
 func (api *API) rules(r *http.Request) apiFuncResult {
 	ruleGroups := api.rulesRetriever(r.Context()).RuleGroups()
 	res := &RuleDiscovery{RuleGroups: make([]*RuleGroup, len(ruleGroups))}
-	typeParam := strings.ToLower(r.URL.Query().Get("type"))
+	typ := strings.ToLower(r.URL.Query().Get(typeParam))
 
-	if typeParam != "" && typeParam != "alert" && typeParam != "record" {
-		err := errors.Errorf("invalid query parameter type='%v'", typeParam)
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+	if typ != "" && typ != "alert" && typ != "record" {
+		return invalidParamError(errors.Errorf("not supported value %q", typ), typeParam)
 	}
 
-	returnAlerts := typeParam == "" || typeParam == "alert"
-	returnRecording := typeParam == "" || typeParam == "record"
+	returnAlerts := typ == "" || typ == "alert"
+	returnRecording := typ == "" || typ == "record"
 
 	for i, grp := range ruleGroups {
 		apiRuleGroup := &RuleGroup{
@@ -1132,7 +1138,7 @@ type prometheusConfig struct {
 	YAML string `json:"yaml"`
 }
 
-func (api *API) serveRuntimeInfo(r *http.Request) apiFuncResult {
+func (api *API) serveRuntimeInfo(_ *http.Request) apiFuncResult {
 	status, err := api.runtimeInfo()
 	if err != nil {
 		return apiFuncResult{status, &apiError{errorInternal, err}, nil, nil}
@@ -1140,18 +1146,18 @@ func (api *API) serveRuntimeInfo(r *http.Request) apiFuncResult {
 	return apiFuncResult{status, nil, nil, nil}
 }
 
-func (api *API) serveBuildInfo(r *http.Request) apiFuncResult {
+func (api *API) serveBuildInfo(_ *http.Request) apiFuncResult {
 	return apiFuncResult{api.buildInfo, nil, nil, nil}
 }
 
-func (api *API) serveConfig(r *http.Request) apiFuncResult {
+func (api *API) serveConfig(_ *http.Request) apiFuncResult {
 	cfg := &prometheusConfig{
 		YAML: api.config().String(),
 	}
 	return apiFuncResult{cfg, nil, nil, nil}
 }
 
-func (api *API) serveFlags(r *http.Request) apiFuncResult {
+func (api *API) serveFlags(_ *http.Request) apiFuncResult {
 	return apiFuncResult{api.flagsMap, nil, nil, nil}
 }
 
@@ -1435,23 +1441,23 @@ func (api *API) deleteSeries(r *http.Request) apiFuncResult {
 	if err := r.ParseForm(); err != nil {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.Wrap(err, "error parsing form values")}, nil, nil}
 	}
-	if len(r.Form["match[]"]) == 0 {
+	if len(r.Form[matcherParam]) == 0 {
 		return apiFuncResult{nil, &apiError{errorBadData, errors.New("no match[] parameter provided")}, nil, nil}
 	}
 
-	start, err := parseTimeParam(r, "start", minTime)
+	start, err := parseTimeParam(r, startParam, minTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, startParam)
 	}
-	end, err := parseTimeParam(r, "end", maxTime)
+	end, err := parseTimeParam(r, endParam, maxTime)
 	if err != nil {
-		return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+		return invalidParamError(err, endParam)
 	}
 
-	for _, s := range r.Form["match[]"] {
+	for _, s := range r.Form[matcherParam] {
 		matchers, err := parser.ParseMetricSelector(s)
 		if err != nil {
-			return apiFuncResult{nil, &apiError{errorBadData, err}, nil, nil}
+			return invalidParamError(err, matcherParam)
 		}
 		if err := api.db.Delete(timestamp.FromTime(start), timestamp.FromTime(end), matchers...); err != nil {
 			return apiFuncResult{nil, &apiError{errorInternal, err}, nil, nil}
@@ -1469,10 +1475,10 @@ func (api *API) snapshot(r *http.Request) apiFuncResult {
 		skipHead bool
 		err      error
 	)
-	if r.FormValue("skip_head") != "" {
-		skipHead, err = strconv.ParseBool(r.FormValue("skip_head"))
+	if r.FormValue(skipHeadParam) != "" {
+		skipHead, err = strconv.ParseBool(r.FormValue(skipHeadParam))
 		if err != nil {
-			return apiFuncResult{nil, &apiError{errorBadData, errors.Wrapf(err, "unable to parse boolean 'skip_head' argument")}, nil, nil}
+			return invalidParamError(errors.Wrapf(err, "unable to parse boolean"), skipHeadParam)
 		}
 	}
 
